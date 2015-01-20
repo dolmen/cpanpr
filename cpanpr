@@ -1,0 +1,7 @@
+#!/usr/bin/env perl
+
+use lib 'lib';
+use CPANPR;
+use YAML::XS;
+
+print Dump(CPANPR::load 'resources/january.html');
