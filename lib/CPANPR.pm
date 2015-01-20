@@ -13,8 +13,6 @@ sub load ($)
 
     +{
 	map {
-	    #my %row;
-	    #@row{qw<member.url member.name dist.url dist.name author.url author.name repo.url repo.path>} =
 	    my @row = m!<td><a href='[^']*'>([^>]*)</a></td>!g;
 	    my %record;
 	    @record{qw<dist author repo>} = @row[1..3];

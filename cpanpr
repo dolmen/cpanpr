@@ -4,4 +4,50 @@ use lib 'lib';
 use CPANPR;
 use YAML::XS;
 
-print Dump(CPANPR::load 'resources/january.html');
+use EV;
+use AnyEvent;
+use LWP::Protocol::AnyEvent::http;
+use Net::GitHub::V3;
+use Coro 'async';
+
+my $gh = Net::GitHub::V3->new;
+$gh->ua->protocols_allowed([qw<http https>]);
+
+my $data = CPANPR::load 'resources/january.html';
+
+# TODO implement rate limit
+#my @members = keys %$data;
+my @members = qw<dolmen rjbs frioux neilbowers>;
+
+
+my @async;
+foreach my $m (@members) {
+    my $d = $data->{$m};
+    push @async,
+    async {
+	# TODO filter on 'created'
+	#print "repo:$d->{repo} author:$m is:pr\n";
+	my %result = $gh->search->issues({
+	    q => "repo:$d->{repo} author:$m is:pr",
+	});
+	# TODO handle when $result{incomplete_result}
+	#print Dump(\%result);
+	#use JSON::MaybeXS;
+	#print JSON::MaybeXS->new->canonical->pretty->encode(\%result);
+	my @prs =
+	    sort { $a->{number} <=> $b->{number} }
+	    map {
+		my $pr = $_;
+		+{
+		    map { ($_ => $pr->{$_}) } qw<number html_url title state created_at>
+		}
+	    }
+	    @{ $result{items} };
+	#print Dump(\@prs);
+	$d->{pull_requests} = \@prs;
+    };
+}
+
+$_->join for @async;
+
+print Dump({ map { ($_ => $data->{$_}) } @members});
