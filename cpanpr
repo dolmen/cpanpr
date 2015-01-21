@@ -8,7 +8,7 @@ use EV;
 use AnyEvent;
 use LWP::Protocol::AnyEvent::http;
 use Net::GitHub::V3;
-use Coro 'async';
+use Coro qw(async cede);
 
 my $gh = Net::GitHub::V3->new;
 $gh->ua->protocols_allowed([qw<http https>]);
@@ -30,6 +30,7 @@ foreach my $m (@members) {
 	my %result = $gh->search->issues({
 	    q => "repo:$d->{repo} author:$m is:pr",
 	});
+	cede;
 	# TODO handle when $result{incomplete_result}
 	#print Dump(\%result);
 	#use JSON::MaybeXS;
