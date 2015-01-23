@@ -8,11 +8,11 @@ use lib 'lib';
 use CPANPR;
 use YAML::XS;
 
+use Coro qw(async async_pool cede);
 use EV;
 use AnyEvent;
 use LWP::Protocol::AnyEvent::http;
 use Net::GitHub::V3;
-use Coro qw(async cede);
 
 my $gh = Net::GitHub::V3->new;
 $gh->ua->protocols_allowed([qw<http https>]);
@@ -23,17 +23,17 @@ my $data = CPANPR::load 'resources/january.html';
 #my @members = keys %$data;
 my @members = qw<dolmen rjbs frioux neilbowers>;
 
-
 my @async;
 foreach my $m (@members) {
-    my $d = $data->{$m};
     push @async,
     async {
+	my ($m, $d) = @_;
 	# TODO filter on 'created'
 	#print "repo:$d->{repo} author:$m is:pr\n";
 	my %result = $gh->search->issues({
 	    q => "repo:$d->{repo} author:$m is:pr",
 	});
+	#print "Fetched $m.\n";
 	cede;
 	# TODO handle when $result{incomplete_result}
 	#print Dump(\%result);
@@ -50,7 +50,8 @@ foreach my $m (@members) {
 	    @{ $result{items} };
 	#print Dump(\@prs);
 	$d->{pull_requests} = \@prs;
-    };
+	#print "Done $m.\n";
+    } $m, $data->{$m};
 }
 
 $_->join for @async;
