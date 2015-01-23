@@ -18,6 +18,7 @@ my $gh = Net::GitHub::V3->new;
 $gh->ua->protocols_allowed([qw<http https>]);
 
 my $data = CPANPR::load 'resources/january.html';
+my $created_search = 'created:2015-01-01..2015-02-01';
 
 # TODO implement rate limit
 #my @members = keys %$data;
@@ -28,10 +29,9 @@ foreach my $m (@members) {
     push @async,
     async {
 	my ($m, $d) = @_;
-	# TODO filter on 'created'
-	#print "repo:$d->{repo} author:$m is:pr\n";
+	#print "repo:$d->{repo} author:$m is:pr $created_expr\n";
 	my %result = $gh->search->issues({
-	    q => "repo:$d->{repo} author:$m is:pr",
+	    q => "repo:$d->{repo} author:$m is:pr $created_search",
 	});
 	#print "Fetched $m.\n";
 	cede;
